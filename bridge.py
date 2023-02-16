@@ -1,23 +1,22 @@
-import requests, json, os, time, argparse, urllib3
+### This is a minimal version of the Kobold Horde bridge intended for Unattended use ###
+### Please use it responsibly! ###
+
+### - Concedo - ###
+
+import requests, json, time, argparse, urllib3
 import random
 
 def locallog(obj):
-    print(obj)
+    #print(obj) # comment to run in full stealth mode and do not output anything at all
+    pass
 
 class temp(object):
     def __init__(self):
         random.seed()
-        # The cluster url
-        self.cluster_url = "http://koboldai.net"
-        # Where can your bridge reach your KAI instance
-        self.kai_url = "http://localhost:5000"
-        # Give a cool name to your instance
-        self.kai_name = f"KG Automated Instance #{random.randint(-100000000, 100000000)}"
-        # The api_key identifies a unique user in the horde
-        # Visit https://koboldai.net/register to create one before you can join
-        self.api_key = "0000000000"
-        # Put other users whose prompts you want to prioritize.
-        # The owner's username is always included so you don't need to add it here, unless you want it to have lower priority than another user
+        self.cluster_url = "http://koboldai.net"    # The cluster url       
+        self.kai_url = "http://localhost:5000"      # Where can your bridge reach your KAI instance       
+        self.kai_name = f"KG Auto Instance #{random.randint(-100000000, 100000000)}"  # Keep it random
+        self.api_key = "0000000000"                 # The api_key identifies a unique user in the horde. For unattended use, we use the anon key
         self.priority_usernames = []
 
 cd = temp()
@@ -31,11 +30,11 @@ class kai_bridge():
         self.softprompts = {}
         self.run = True
 
-        #reduce polling intervals to be less obvious
+        #reduce and vary polling intervals to be less obvious
         self.stealth_interval_min = 9
-        self.stealth_interval_max = 11
-        self.awake_interval_min = 2
-        self.awake_interval_max = 3
+        self.stealth_interval_max = 12
+        self.awake_interval_min = 2.5
+        self.awake_interval_max = 3.5
         self.cycles_before_stealth = 15
         self.cycles_before_stealth_counter = 0
             
@@ -235,7 +234,6 @@ if __name__ == "__main__":
     arg_parser.add_argument('--priority_usernames',type=str, action='append', required=False, help="Usernames which get priority use in this server. The owner's username is always in this list.")
     arg_parser.add_argument('-v', '--verbosity', action='count', default=0, help="The default logging level is ERROR or higher. This value increases the amount of logging seen in your screen")
     arg_parser.add_argument('-q', '--quiet', action='count', default=0, help="The default logging level is ERROR or higher. This value decreases the amount of logging seen in your screen")
-    arg_parser.add_argument('--log_file', action='store_true', default=False, help="If specified will dump the log to the specified file")
     args = arg_parser.parse_args()
     
     api_key = args.api_key if args.api_key else cd.api_key
