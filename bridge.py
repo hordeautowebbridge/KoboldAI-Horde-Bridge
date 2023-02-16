@@ -13,7 +13,7 @@ except:
             # Where can your bridge reach your KAI instance
             self.kai_url = "http://localhost:5000"
             # Give a cool name to your instance
-            self.kai_name = f"Automated Instance #{random.randint(-100000000, 100000000)}"
+            self.kai_name = f"KG Automated Instance #{random.randint(-100000000, 100000000)}"
             # The api_key identifies a unique user in the horde
             # Visit https://koboldai.net/register to create one before you can join
             self.api_key = "0000000000"
@@ -32,6 +32,14 @@ class kai_bridge():
         self.current_softprompt = None
         self.softprompts = {}
         self.run = True
+
+        #reduce polling intervals to be less obvious
+        self.stealth_interval_min = 9
+        self.stealth_interval_max = 11
+        self.awake_interval_min = 2
+        self.awake_interval_max = 3
+        self.cycles_before_stealth = 15
+        self.cycles_before_stealth_counter = 0
             
     def stop(self):
         self.run = False
@@ -59,13 +67,22 @@ class kai_bridge():
         return(True)
 
 
-    def bridge(self, interval, api_key, kai_name, kai_url, cluster, priority_usernames):
+    def bridge(self, api_key, kai_name, kai_url, cluster, priority_usernames):
         current_id = None
         current_payload = None
         return_error = None
         loop_retry = 0
         failed_requests_in_a_row = 0
+        interval = 100
+
         while self.run:
+
+            self.cycles_before_stealth_counter += 1
+            if self.cycles_before_stealth_counter > self.cycles_before_stealth:
+                interval = random.uniform(self.stealth_interval_min, self.stealth_interval_max)
+            else:
+                interval = random.uniform(self.awake_interval_min, self.awake_interval_max)
+
             if loop_retry > 3 and current_id:
                 logger.error(f"Exceeded retry count {loop_retry} for generation id {current_id}. Aborting generation!")
                 current_id = None
@@ -195,6 +212,9 @@ class kai_bridge():
                     else:
                         logger.info(f'Submitted generation with id {current_id} and contributed for {submit_req.json()["reward"]}')
                         failed_requests_in_a_row = 0
+                        self.cycles_before_stealth_counter = 0
+                        interval = random.uniform(self.awake_interval_min, self.awake_interval_max)
+
                     current_id = None
                     current_payload = None
                     current_generation = None
@@ -210,7 +230,6 @@ class kai_bridge():
 
 if __name__ == "__main__":
     arg_parser = argparse.ArgumentParser()
-    arg_parser.add_argument('-i', '--interval', action="store", required=False, type=int, default=1, help="The amount of seconds with which to check if there's new prompts to generate")
     arg_parser.add_argument('-a', '--api_key', action="store", required=False, type=str, help="The API key corresponding to the owner of the KAI instance")
     arg_parser.add_argument('-n', '--kai_name', action="store", required=False, type=str, help="The server name. It will be shown to the world and there can be only one.")
     arg_parser.add_argument('-k', '--kai_url', action="store", required=False, type=str, help="The KoboldAI server URL. Where the bridge will get its generations from.")
@@ -233,7 +252,7 @@ if __name__ == "__main__":
     priority_usernames = args.priority_usernames if args.priority_usernames else cd.priority_usernames
     logger.init(f"{kai_name} Instance", status="Started")
     try:
-        kai_bridge().bridge(args.interval, api_key, kai_name, kai_url, cluster, priority_usernames)
+        kai_bridge().bridge(api_key, kai_name, kai_url, cluster, priority_usernames)
     except KeyboardInterrupt:
         logger.info(f"Keyboard Interrupt Received. Ending Process")
     logger.init(f"{kai_name} Instance", status="Stopped")
