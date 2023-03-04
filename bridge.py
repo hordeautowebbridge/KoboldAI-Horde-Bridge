@@ -4,7 +4,7 @@ import random
 import time
 
 def locallog(obj):
-    print(obj) # comment to run in full stealth mode and do not output anything at all
+    #print(obj) # comment to run in full stealth mode and do not output anything at all
     pass
 
 
